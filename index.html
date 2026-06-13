@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevOps on macOS M5 — Isolated Study Environment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0e1117;
+      --bg2:       #161b22;
+      --bg3:       #1f2937;
+      --border:    rgba(255,255,255,0.08);
+      --border2:   rgba(255,255,255,0.14);
+      --text:      #e6edf3;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+      --green:     #3fb950;
+      --red:       #f85149;
+      --amber:     #d29922;
+      --purple:    #bc8cff;
+      --teal:      #39d353;
+      --mono:      'IBM Plex Mono', monospace;
+      --sans:      'Inter', system-ui, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(14,17,23,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 52px;
+    }
+    .nav-logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--green);
+      margin-right: auto;
+      letter-spacing: 0.01em;
+    }
+    .nav-logo span { color: var(--muted); }
+    nav a {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0 14px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    nav a:hover { color: var(--text); }
+    nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 860px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 5rem 0 3.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--green);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+    .hero h1 em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 560px;
+      margin-bottom: 2rem;
+    }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pill {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+    }
+    .pill.green  { border-color: rgba(63,185,80,0.35);  color: var(--green); }
+    .pill.blue   { border-color: rgba(88,166,255,0.35); color: var(--accent); }
+    .pill.purple { border-color: rgba(188,140,255,0.35);color: var(--purple); }
+    .pill.amber  { border-color: rgba(210,153,34,0.35); color: var(--amber); }
+
+    /* ── SECTIONS ── */
+    section { padding: 4rem 0; border-bottom: 1px solid var(--border); }
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 2rem;
+    }
+    h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── STEPS ── */
+    .steps { display: flex; flex-direction: column; gap: 1.5rem; }
+    .step {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 0 1.25rem;
+      align-items: start;
+    }
+    .step-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .step-body { padding-top: 4px; }
+    .step-body h3 { color: var(--text); margin-bottom: 4px; }
+    .step-body p  { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+    .step-connector {
+      grid-column: 1;
+      justify-self: center;
+      width: 1px;
+      height: 24px;
+      background: var(--border2);
+    }
+
+    /* ── CODE BLOCKS ── */
+    .code-wrap { position: relative; margin: 8px 0; }
+    pre {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.7;
+      overflow-x: auto;
+      color: var(--text);
+    }
+    pre .cm { color: var(--muted); }
+    pre .kw { color: var(--purple); }
+    pre .st { color: var(--green); }
+    pre .va { color: var(--accent); }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border2);
+      background: var(--bg3);
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
+    /* ── NOTE / WARNING ── */
+    .note {
+      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin: 8px 0;
+      border-left: 3px solid;
+    }
+    .note.info    { background: rgba(88,166,255,0.07);  border-color: var(--accent); color: #93c5fd; }
+    .note.success { background: rgba(63,185,80,0.07);   border-color: var(--green);  color: #86efac; }
+    .note.warn    { background: rgba(210,153,34,0.07);  border-color: var(--amber);  color: #fcd34d; }
+    .note.danger  { background: rgba(248,81,73,0.07);   border-color: var(--red);    color: #fca5a5; }
+    .note strong  { font-weight: 600; }
+
+    /* ── TOOL CARDS ── */
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .tool-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.125rem;
+      transition: border-color 0.15s;
+    }
+    .tool-card:hover { border-color: var(--border2); }
+    .tool-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .tool-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+    }
+    .tool-name { font-size: 14px; font-weight: 600; }
+    .tool-desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+    .tool-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    .tag-free    { background: rgba(63,185,80,0.12);   color: var(--green); }
+    .tag-paid    { background: rgba(210,153,34,0.12);  color: var(--amber); }
+    .tag-core    { background: rgba(88,166,255,0.12);  color: var(--accent); }
+
+    /* ── CHEATSHEET ── */
+    .cheat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.25rem; }
+    .cheat-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .cheat-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cheat-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .cheat-body { padding: 0; }
+    .cheat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 7px 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12.5px;
+      gap: 12px;
+      align-items: center;
+    }
+    .cheat-row:last-child { border-bottom: none; }
+    .cheat-cmd {
+      font-family: var(--mono);
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .cheat-desc { color: var(--muted); }
+
+    /* ── REMOVAL TABLE ── */
+    .remove-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 1rem;
+    }
+    .remove-table th {
+      text-align: left;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border2);
+      font-weight: 500;
+    }
+    .remove-table td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    .remove-table tr:last-child td { border-bottom: none; }
+    .remove-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .remove-table .tool-col { font-weight: 500; white-space: nowrap; }
+    .remove-table code {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      background: var(--bg3);
+      padding: 1px 6px;
+      border-radius: 4px;
+      color: var(--red);
+    }
+    .remove-table .note-col { color: var(--muted); font-size: 12px; }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 3rem 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      nav a { padding: 0 10px; font-size: 12px; }
+      .hero { padding: 3rem 0 2.5rem; }
+      .cheat-grid { grid-template-columns: 1fr; }
+      .cheat-row { grid-template-columns: 1fr; gap: 2px; }
+      .cheat-desc { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">~/devops-mac-m5 <span>$</span></div>
+  <a href="#setup" class="active">Setup</a>
+  <a href="#tools">Tools</a>
+  <a href="#cheatsheet">Cheatsheet</a>
+  <a href="#removal">Removal</a>
+</nav>
+
+<!-- ── HERO ── -->
+<div class="page">
+  <div class="hero">
+    <p class="hero-eyebrow">macOS M5 · Apple Silicon</p>
+    <h1>DevOps study environment,<br /><em>fully isolated</em> from work.</h1>
+    <p class="hero-sub">
+      A practical guide to running Docker, Kubernetes, Linux VMs, and CI/CD pipelines on your Mac
+      without touching your work setup — and cleaning everything up when you're done.
+    </p>
+    <div class="pill-row">
+      <span class="pill green">Docker + K8s</span>
+      <span class="pill blue">Linux VMs</span>
+      <span class="pill purple">mise · direnv</span>
+      <span class="pill amber">GitHub Actions local</span>
+      <span class="pill">Clean removal</span>
+    </div>
+  </div>
+
+  <!-- ── TOOLS OVERVIEW ── -->
+  <section id="tools">
+    <p class="section-label">What you'll install</p>
+    <h2>The toolstack</h2>
+    <div class="tool-grid">
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">🐳</div>
+          <span class="tool-name">OrbStack</span>
+        </div>
+        <p class="tool-desc">Lightweight Docker + Kubernetes for Apple Silicon. Faster and far less memory-hungry than Docker Desktop.</p>
+        <span class="tool-tag tag-free">free for personal</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">🖥</div>
+          <span class="tool-name">UTM</span>
+        </div>
+        <p class="tool-desc">Free ARM virtual machines. Run full Ubuntu or Debian with systemd — great for simulating real servers.</p>
+        <span class="tool-tag tag-free">free</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">🔀</div>
+          <span class="tool-name">mise</span>
+        </div>
+        <p class="tool-desc">Manage kubectl, helm, terraform and more — per project, per folder. Modern replacement for asdf.</p>
+        <span class="tool-tag tag-free">free · open source</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">📁</div>
+          <span class="tool-name">direnv</span>
+        </div>
+        <p class="tool-desc">Loads env vars (KUBECONFIG, AWS_PROFILE…) automatically when you cd into a project folder.</p>
+        <span class="tool-tag tag-free">free · open source</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">▶</div>
+          <span class="tool-name">act</span>
+        </div>
+        <p class="tool-desc">Run GitHub Actions workflows locally without pushing. Essential for learning CI/CD without wasting run minutes.</p>
+        <span class="tool-tag tag-free">free · open source</span>
+      </div>
+      <div class="tool-card">
+        <div class="tool-card-header">
+          <div class="tool-icon">🍺</div>
+          <span class="tool-name">Homebrew</span>
+        </div>
+        <p class="tool-desc">The package manager that installs and cleanly removes everything else. Install this first.</p>
+        <span class="tool-tag tag-core">prerequisite</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── STEP-BY-STEP ── -->
+  <section id="setup">
+    <p class="section-label">Step-by-step guide</p>
+    <h2>From zero to isolated DevOps env</h2>
+
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <h3>Install Homebrew</h3>
+          <p>The foundation. Every other tool installs and uninstalls through it cleanly.</p>
+          <div class="code-wrap">
+            <pre><span class="cm"># Paste this in Terminal</span>
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="code-wrap">
+            <pre><span class="cm"># After install, follow the prompt to add Homebrew to your PATH
+# On M-series it'll look like:</span>
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
+source ~/.zshrc</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <h3>Install OrbStack — Docker + Kubernetes</h3>
+          <p>Replaces Docker Desktop. Boots in seconds, uses a fraction of the RAM, and ships with a built-in K8s cluster.</p>
+          <div class="code-wrap">
+            <pre>brew install --cask orbstack</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="code-wrap">
+            <pre><span class="cm"># Verify both Docker and kubectl are available</span>
+docker version
+kubectl version --client</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="note info">
+            Open OrbStack from Applications, enable Kubernetes in its settings, and you have a single-node cluster ready to go.
+          </div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <h3>Install UTM — Linux VMs</h3>
+          <p>For when you need a real Linux environment with systemd, package managers, or anything containers can't simulate.</p>
+          <div class="code-wrap">
+            <pre>brew install --cask utm</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="note warn">
+            Download ARM64 images only. For Ubuntu Server: <strong>ubuntu.com/download/server/arm</strong>.
+            UTM also has a built-in gallery with pre-configured VMs.
+          </div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 4 -->
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <h3>Install mise — per-project tool versions</h3>
+          <p>Keeps kubectl, terraform, helm, and other CLIs versioned per project so your study setup never bleeds into work.</p>
+          <div class="code-wrap">
+            <pre>brew install mise
+
+<span class="cm"># Add to ~/.zshrc</span>
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+source ~/.zshrc</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="code-wrap">
+            <pre><span class="cm"># Inside your study project folder:</span>
+mise use kubectl@1.29
+mise use helm@3.14
+mise use terraform@1.7
+
+<span class="cm"># This creates a .mise.toml file — versions activate only in this folder</span></pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 5 -->
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-body">
+          <h3>Install direnv — env vars per folder</h3>
+          <p>Automatically loads and unloads environment variables when you enter or leave a directory. Keeps contexts isolated.</p>
+          <div class="code-wrap">
+            <pre>brew install direnv
+
+<span class="cm"># Add to ~/.zshrc</span>
+echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
+source ~/.zshrc</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="code-wrap">
+            <pre><span class="cm"># Create a .envrc in your study folder:</span>
+<span class="kw">cat</span> > ~/studies/k8s/.envrc << 'EOF'
+<span class="va">export</span> KUBECONFIG=~/.kube/config-lab
+<span class="va">export</span> AWS_PROFILE=lab
+<span class="va">export</span> ENVIRONMENT=dev
+EOF
+
+direnv allow  <span class="cm"># run once to trust the file</span></pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="note success">
+            From now on: <code style="font-family:var(--mono);font-size:12px">cd ~/studies/k8s</code> loads the env vars. <code style="font-family:var(--mono);font-size:12px">cd ..</code> removes them automatically.
+          </div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 6 -->
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-body">
+          <h3>Install act — run GitHub Actions locally</h3>
+          <p>Runs your <code style="font-family:var(--mono);font-size:12px">.github/workflows</code> files locally using Docker, without pushing to GitHub.</p>
+          <div class="code-wrap">
+            <pre>brew install act</pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="code-wrap">
+            <pre><span class="cm"># In any repo with GitHub Actions workflows:</span>
+act -l            <span class="cm"># list available workflows</span>
+act push          <span class="cm"># simulate a push event</span>
+act -j build      <span class="cm"># run a specific job</span></pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+          <div class="note info">Requires OrbStack (Docker) to be running.</div>
+        </div>
+      </div>
+      <div class="step"><div class="step-connector"></div></div>
+
+      <!-- STEP 7 -->
+      <div class="step">
+        <div class="step-num">07</div>
+        <div class="step-body">
+          <h3>Create your study folder structure</h3>
+          <p>Keep everything study-related in one place so removal is trivial later.</p>
+          <div class="code-wrap">
+            <pre>mkdir -p ~/studies/{docker,k8s,terraform,github-actions,linux}
+
+<span class="cm"># Each folder gets its own .mise.toml and .envrc
+# so tools and env vars never cross-contaminate</span></pre>
+            <button class="copy-btn" onclick="copy(this)">copy</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── CHEATSHEET ── -->
+  <section id="cheatsheet">
+    <p class="section-label">Quick reference</p>
+    <h2>Cheatsheet</h2>
+    <div class="cheat-grid">
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#3fb950"></div>
+          Docker (via OrbStack)
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">docker ps</span><span class="cheat-desc">List running containers</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">docker run -it ubuntu bash</span><span class="cheat-desc">Run Ubuntu interactively</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">docker build -t myapp .</span><span class="cheat-desc">Build image from Dockerfile</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">docker compose up -d</span><span class="cheat-desc">Start multi-container app</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">docker system prune -a</span><span class="cheat-desc">Remove all unused data</span></div>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#58a6ff"></div>
+          Kubernetes (kubectl)
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">kubectl get pods -A</span><span class="cheat-desc">All pods, all namespaces</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">kubectl apply -f file.yaml</span><span class="cheat-desc">Apply a manifest</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">kubectl logs pod-name</span><span class="cheat-desc">Stream pod logs</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">kubectl exec -it pod -- sh</span><span class="cheat-desc">Shell into a pod</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">kubectl delete -f file.yaml</span><span class="cheat-desc">Remove resources</span></div>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#bc8cff"></div>
+          mise — tool versions
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">mise use kubectl@1.29</span><span class="cheat-desc">Pin version in project</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">mise install</span><span class="cheat-desc">Install from .mise.toml</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">mise list</span><span class="cheat-desc">Show all installed tools</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">mise which kubectl</span><span class="cheat-desc">Path of active binary</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">mise prune</span><span class="cheat-desc">Remove unused versions</span></div>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#d29922"></div>
+          direnv
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">direnv allow</span><span class="cheat-desc">Trust .envrc in folder</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">direnv deny</span><span class="cheat-desc">Revoke trust</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">direnv reload</span><span class="cheat-desc">Re-evaluate .envrc</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">direnv status</span><span class="cheat-desc">Show current state</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">direnv edit .</span><span class="cheat-desc">Open .envrc in editor</span></div>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#39d353"></div>
+          act — local CI/CD
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">act -l</span><span class="cheat-desc">List workflows</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">act push</span><span class="cheat-desc">Simulate push event</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">act pull_request</span><span class="cheat-desc">Simulate PR event</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">act -j build</span><span class="cheat-desc">Run one job only</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">act --dry-run</span><span class="cheat-desc">Preview without running</span></div>
+        </div>
+      </div>
+
+      <div class="cheat-card">
+        <div class="cheat-header">
+          <div class="cheat-dot" style="background:#f85149"></div>
+          Helm
+        </div>
+        <div class="cheat-body">
+          <div class="cheat-row"><span class="cheat-cmd">helm repo add &lt;name&gt; &lt;url&gt;</span><span class="cheat-desc">Add a chart repo</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">helm search repo nginx</span><span class="cheat-desc">Search charts</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">helm install myapp ./chart</span><span class="cheat-desc">Deploy a chart</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">helm upgrade myapp ./chart</span><span class="cheat-desc">Update a release</span></div>
+          <div class="cheat-row"><span class="cheat-cmd">helm uninstall myapp</span><span class="cheat-desc">Remove a release</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── REMOVAL ── -->
+  <section id="removal">
+    <p class="section-label">Clean teardown</p>
+    <h2>Removal guide</h2>
+    <p style="color:var(--muted);margin-bottom:1.5rem;font-size:14px">
+      Remove everything cleanly when you want to reclaim disk space or start fresh.
+      Follow this order to avoid orphaned config files.
+    </p>
+
+    <div class="note danger" style="margin-bottom:1.5rem">
+      <strong>Heads up:</strong> Removing UTM VMs and Docker images can free up 10–30 GB.
+      Always check before deleting anything you still need.
+    </div>
+
+    <table class="remove-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Uninstall command</th>
+          <th>Extra cleanup</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="tool-col">act</td>
+          <td><code>brew uninstall act</code></td>
+          <td class="note-col">Remove pulled Docker images with <code>docker images | grep act | awk '{print $3}' | xargs docker rmi</code></td>
+        </tr>
+        <tr>
+          <td class="tool-col">direnv</td>
+          <td><code>brew uninstall direnv</code></td>
+          <td class="note-col">Remove <code>eval "$(direnv hook zsh)"</code> from <code>~/.zshrc</code>. Delete <code>~/.config/direnv</code></td>
+        </tr>
+        <tr>
+          <td class="tool-col">mise</td>
+          <td><code>brew uninstall mise</code></td>
+          <td class="note-col">Remove <code>eval "$(mise activate zsh)"</code> from <code>~/.zshrc</code>. Delete <code>~/.local/share/mise</code> and <code>~/.config/mise</code></td>
+        </tr>
+        <tr>
+          <td class="tool-col">OrbStack</td>
+          <td><code>brew uninstall --cask orbstack</code></td>
+          <td class="note-col">Delete <code>~/OrbStack</code> and <code>~/Library/Application Support/OrbStack</code> to remove all images and VMs</td>
+        </tr>
+        <tr>
+          <td class="tool-col">UTM</td>
+          <td><code>brew uninstall --cask utm</code></td>
+          <td class="note-col">Delete VMs: <code>rm -rf ~/Library/Containers/com.utmapp.UTM</code> and <code>~/Documents/UTM</code></td>
+        </tr>
+        <tr>
+          <td class="tool-col">Homebrew</td>
+          <td colspan="2"><code>/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"</code> — run this last, after everything else is gone</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:1.5rem">
+      <h3 style="margin-bottom:0.75rem">Full cleanup in one pass</h3>
+      <div class="code-wrap">
+        <pre><span class="cm"># Remove tools (in order)</span>
+brew uninstall act
+brew uninstall direnv
+brew uninstall mise
+brew uninstall --cask orbstack
+brew uninstall --cask utm
+
+<span class="cm"># Remove data directories</span>
+rm -rf ~/OrbStack
+rm -rf ~/Library/Application\ Support/OrbStack
+rm -rf ~/Library/Containers/com.utmapp.UTM
+rm -rf ~/Documents/UTM
+rm -rf ~/.local/share/mise
+rm -rf ~/.config/mise
+rm -rf ~/.config/direnv
+
+<span class="cm"># Clean .zshrc — remove these three lines:</span>
+<span class="cm"># eval "$(/opt/homebrew/bin/brew shellenv)"</span>
+<span class="cm"># eval "$(mise activate zsh)"</span>
+<span class="cm"># eval "$(direnv hook zsh)"</span>
+
+<span class="cm"># Finally, remove Homebrew itself</span>
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/uninstall.sh)"</pre>
+        <button class="copy-btn" onclick="copy(this)">copy</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="page">
+    Built with plain HTML · Deploy to GitHub Pages by pushing to <code style="font-family:var(--mono);font-size:12px">gh-pages</code> branch or enabling Pages on <code style="font-family:var(--mono);font-size:12px">main</code> in repo settings ·
+    <a href="https://orbstack.dev" target="_blank" rel="noopener">OrbStack</a> ·
+    <a href="https://mac.getutm.app" target="_blank" rel="noopener">UTM</a> ·
+    <a href="https://mise.jdx.dev" target="_blank" rel="noopener">mise</a>
+  </div>
+</footer>
+
+<script>
+  function copy(btn) {
+    const pre = btn.previousElementSibling;
+    navigator.clipboard.writeText(pre.innerText).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => { btn.textContent = 'copy'; }, 1600);
+    });
+  }
+
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id));
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
