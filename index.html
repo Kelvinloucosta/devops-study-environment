@@ -538,37 +538,81 @@ rm -rf ~/Library/Containers/com.docker.docker<button class="copy-btn" onclick="c
         <div class="code-wrap">
           <pre>brew install --cask utm<button class="copy-btn" onclick="cp(this)">copy</button></pre>
         </div>
-        <p class="cmd-label">Download a Linux image (ARM64 only for M-series)</p>
+        <p class="cmd-label">Get a Linux image — use the built-in Gallery (easiest)</p>
         <div class="note note-info">
-          Open UTM → click <strong>+</strong> → <strong>Browse UTM Gallery</strong> — it has ready-to-go Ubuntu and Debian images for Apple Silicon. No manual download needed.
-          <br/><br/>Or download manually: <strong>ubuntu.com/download/server/arm</strong> (choose the ARM64 .iso)
+          Open UTM → click <strong>Browse UTM Gallery</strong> → pick <strong>Debian</strong> or <strong>Ubuntu</strong> → click <strong>Open in UTM</strong>.<br/><br/>
+          No .iso download needed. The VM will appear in the sidebar automatically.
         </div>
+        <div class="note note-success">
+          Default credentials for the Gallery VMs:<br/>
+          <strong>User:</strong> <code>debian</code> &nbsp;·&nbsp; <strong>Password:</strong> <code>debian</code><br/>
+          <strong>Root:</strong> <code>root</code> &nbsp;·&nbsp; <strong>Password:</strong> <code>password</code>
+        </div>
+        <p class="cmd-label" style="margin-top:1.25rem">⚠️ If you picked Debian 10 (Buster) — fix the repositories first</p>
+        <div class="note note-warn">
+          Debian 10 reached end-of-life in 2022. Its package repositories were archived, so <code>apt-get update</code> will fail with 404 errors out of the box. Run the commands below once to fix it before installing anything.
+        </div>
+        <div class="code-wrap">
+          <pre><span class="cm"># Point apt to the Debian archive mirror</span>
+sudo bash -c 'cat > /etc/apt/sources.list &lt;&lt; EOF
+deb http://archive.debian.org/debian buster main contrib non-free
+deb http://archive.debian.org/debian-security buster/updates main
+EOF'
+
+<span class="cm"># Now update and install normally</span>
+sudo apt-get update
+sudo apt-get install -y curl<button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+        <div class="note note-info">If you want a more up-to-date system, grab <strong>Debian 12 (Bookworm)</strong> or <strong>Ubuntu 24.04</strong> from the Gallery instead — both are supported until 2027+.</div>
       </div>
 
       <div class="tab-panel" id="utm-use">
         <div class="explain">
-          <strong>Think of UTM VMs like a separate computer inside your Mac.</strong> It boots Linux, you use it, then suspend or shut it down. Your Mac is unaffected.
+          <strong>Think of UTM VMs like a separate computer inside your Mac.</strong> It boots Linux, you use it, then suspend or shut it down. Your Mac is unaffected.<br/><br/>
+          The most comfortable way to use the VM is via <strong>SSH from your Mac terminal</strong> — no need to type inside the UTM window. Follow the steps below to set that up.
         </div>
 
         <div class="use-step">
           <div class="use-num">1</div>
           <div class="use-body">
-            <div class="use-title">Start your VM</div>
-            <div class="use-desc">Open UTM from Applications, select your VM and click the play button ▶</div>
+            <div class="use-title">Before starting — change the network mode</div>
+            <div class="use-desc">The default network (<em>Emulated VLAN</em>) doesn't allow SSH from your Mac. You need to switch it to <strong>Shared Network</strong> first. Do this once, before starting the VM.</div>
+            <div class="note note-warn" style="margin-top:6px">Stop the VM if it's running → click the <strong>edit/settings</strong> icon in UTM → go to <strong>Network</strong> → change <strong>Network Mode</strong> from <code>Emulated VLAN</code> to <code>Shared Network</code> → save → start the VM again.</div>
           </div>
         </div>
 
         <div class="use-step">
           <div class="use-num">2</div>
           <div class="use-body">
-            <div class="use-title">SSH into it from your Mac terminal</div>
-            <div class="use-desc">More comfortable than typing in the UTM window. Find the VM's IP in UTM's network tab.</div>
-            <div class="code-wrap"><pre>ssh youruser@192.168.64.x<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="use-title">Start the VM and log in inside the UTM window</div>
+            <div class="use-desc">Click ▶ to start, then log in directly in the UTM window to find the IP.</div>
+            <div class="code-wrap"><pre>login: debian
+password: debian<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
           </div>
         </div>
 
         <div class="use-step">
           <div class="use-num">3</div>
+          <div class="use-body">
+            <div class="use-title">Find the VM's IP address</div>
+            <div class="use-desc">Run this inside the UTM window. Look for the <code>inet</code> line — it'll be something like <code>192.168.64.x</code>.</div>
+            <div class="code-wrap"><pre>ip addr show | grep inet<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">4</div>
+          <div class="use-body">
+            <div class="use-title">SSH from your Mac terminal</div>
+            <div class="use-desc">Now open your Mac terminal and connect. Replace <code>192.168.64.x</code> with the IP you found above.</div>
+            <div class="code-wrap"><pre>ssh debian@192.168.64.x
+<span class="cm"># Password: debian</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="note note-success" style="margin-top:6px">You're now inside the VM from your Mac terminal. No need to use the UTM window anymore.</div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">5</div>
           <div class="use-body">
             <div class="use-title">Use it like a real Linux server</div>
             <div class="use-desc">Install packages, configure services, practice anything you'd do on a remote server.</div>
@@ -578,15 +622,15 @@ systemctl status nginx<button class="copy-btn" onclick="cp(this)">copy</button><
         </div>
 
         <div class="use-step">
-          <div class="use-num">4</div>
+          <div class="use-num">6</div>
           <div class="use-body">
             <div class="use-title">Suspend when done (saves the VM state)</div>
-            <div class="use-desc">In UTM: <strong>Machine → Suspend</strong>. Saves everything to disk instantly and frees RAM. Resumes in seconds next time.</div>
+            <div class="use-desc">In UTM: <strong>Machine → Suspend</strong>. Saves everything instantly and frees RAM. Resumes in seconds next time — no need to find the IP again.</div>
           </div>
         </div>
 
         <div class="use-step">
-          <div class="use-num">5</div>
+          <div class="use-num">7</div>
           <div class="use-body">
             <div class="use-title">Or shut down fully from inside the VM</div>
             <div class="code-wrap"><pre>sudo shutdown now<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
