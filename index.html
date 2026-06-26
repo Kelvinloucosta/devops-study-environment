@@ -260,6 +260,7 @@
 
 <nav>
   <span class="nav-logo">~/devops-mac $</span>
+  <a href="#setup">Setup</a>
   <a href="#homebrew">Homebrew</a>
   <a href="#docker">Docker</a>
   <a href="#utm">UTM</a>
@@ -276,6 +277,109 @@
     <h1>DevOps study environment<br /><em>simple and isolated</em></h1>
     <p>One guide per tool — install, use, and remove. Your work setup stays untouched.</p>
   </div>
+
+  <!-- ══════════════════════════════════════
+       0. INITIAL SETUP — folders + aliases
+  ══════════════════════════════════════ -->
+  <section class="tool-section" id="setup">
+    <div class="tool-header">
+      <div class="tool-emoji">📂</div>
+      <div>
+        <span class="tool-title">Initial setup</span>
+        <span class="tool-badge badge-req">do this first</span>
+      </div>
+    </div>
+    <p class="tool-what">
+      Before installing any tools, set up your folder structure and shell aliases.
+      Keeping work and study in separate folders is the foundation of the entire isolation strategy —
+      everything else (mise, direnv) builds on top of this.
+    </p>
+
+    <div class="tabs" id="tabs-setup">
+      <div class="tab-nav">
+        <button class="tab-btn active-install" onclick="switchTab('setup','install',this)"><span class="tab-dot dot-install"></span>Folder structure</button>
+        <button class="tab-btn" onclick="switchTab('setup','use',this)"><span class="tab-dot dot-use"></span>Aliases</button>
+      </div>
+
+      <div class="tab-panel active" id="setup-install">
+        <div class="explain">
+          <strong>The idea:</strong> one folder for work projects, one for study projects. They never mix.
+          Tools and env vars activated inside <code>~/studies/</code> never bleed into your work folder.
+        </div>
+
+        <p class="cmd-label">Create the study folder structure</p>
+        <div class="code-wrap">
+          <pre><span class="cm"># Create folders for each topic you want to study</span>
+mkdir -p ~/studies/docker
+mkdir -p ~/studies/kubernetes
+mkdir -p ~/studies/github
+mkdir -p ~/studies/gitops
+mkdir -p ~/studies/AI<button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+
+        <div class="note note-info">
+          Your work projects live in their own folder (e.g. <code>~/work</code> or <code>~/workspace</code>).
+          Keep them completely separate — never put study projects inside your work folder.
+        </div>
+
+        <p class="cmd-label">What it looks like</p>
+        <div class="code-wrap">
+          <pre>~
+├── studies/          <span class="cm"># ← everything DevOps study goes here</span>
+│   ├── docker/
+│   ├── kubernetes/
+│   ├── github/
+│   ├── gitops/
+│   └── AI/
+└── work/             <span class="cm"># ← your work projects, untouched</span>
+    ├── project-a/
+    └── project-b/</pre>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="setup-use">
+        <div class="explain">
+          <strong>Aliases</strong> are shortcuts in your terminal — instead of typing <code>cd ~/studies/kubernetes</code> every time,
+          you type <code>std-k8s</code> and you're there instantly. Add them to your <code>~/.zshrc</code> so they load on every terminal session.
+        </div>
+
+        <p class="cmd-label">Add study aliases to ~/.zshrc</p>
+        <div class="code-wrap">
+          <pre><span class="cm"># Open your shell config</span>
+nano ~/.zshrc
+
+<span class="cm"># Add these lines at the bottom:</span>
+<span class="cm"># ── Study aliases ──────────────────────</span>
+alias std-docker='cd ~/studies/docker'
+alias std-k8s='cd ~/studies/kubernetes'
+alias std-git='cd ~/studies/github'
+alias std-gitops='cd ~/studies/gitops'
+alias std-ai='cd ~/studies/AI'<button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+
+        <p class="cmd-label">Apply the changes</p>
+        <div class="code-wrap">
+          <pre>source ~/.zshrc<button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+
+        <p class="cmd-label">Now you can navigate instantly</p>
+        <div class="code-wrap">
+          <pre>std-k8s      <span class="cm"># → cd ~/studies/kubernetes</span>
+std-docker   <span class="cm"># → cd ~/studies/docker</span></pre>
+        </div>
+
+        <div class="note note-success">
+          You can also add aliases for your work projects the same way — keeps everything fast to navigate without ever mixing the two.
+        </div>
+
+        <p class="cmd-label">See all your aliases anytime</p>
+        <div class="code-wrap">
+          <pre>alias              <span class="cm"># list all aliases</span>
+alias | grep std   <span class="cm"># filter study aliases only</span><button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+      </div>
+    </div>
+  </section>
 
   <!-- ══════════════════════════════════════
        1. HOMEBREW
@@ -792,49 +896,62 @@ source ~/.zshrc<button class="copy-btn" onclick="cp(this)">copy</button></pre>
 
       <div class="tab-panel" id="direnv-use">
         <div class="explain">
-          <strong>How it works:</strong> you create a file called <code>.envrc</code> in your project folder with the env vars you want. direnv loads them when you enter the folder and removes them when you leave. No manual export/unset needed.
+          <strong>How it works:</strong> you create a file called <code>.envrc</code> inside your study folder with the env vars you want. direnv loads them when you enter the folder and removes them when you leave. No manual export/unset needed — and your work env vars are never touched.
         </div>
 
         <div class="use-step">
           <div class="use-num">1</div>
           <div class="use-body">
-            <div class="use-title">Create a .envrc in your study folder</div>
-            <div class="code-wrap"><pre><span class="cm"># Example for a k8s study folder</span>
-cat > ~/studies/k8s/.envrc &lt;&lt; 'EOF'
-export KUBECONFIG=~/.kube/config-lab
-export AWS_PROFILE=lab
-export ENVIRONMENT=dev
-EOF<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="use-title">Go to your study folder first</div>
+            <div class="use-desc">The folder must exist before creating the .envrc inside it.</div>
+            <div class="code-wrap"><pre>cd ~/studies/kubernetes<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
           </div>
         </div>
 
         <div class="use-step">
           <div class="use-num">2</div>
           <div class="use-body">
-            <div class="use-title">Allow direnv to load it (one-time per file)</div>
-            <div class="use-desc">For security, direnv asks you to approve each .envrc before loading it.</div>
-            <div class="code-wrap"><pre>cd ~/studies/k8s
-direnv allow<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="use-title">Create the .envrc file</div>
+            <div class="use-desc">This tells direnv which env vars to load when you enter this folder.</div>
+            <div class="code-wrap"><pre>cat > .envrc &lt;&lt; 'EOF'
+export KUBECONFIG=~/.kube/config-lab
+export ENVIRONMENT=study
+EOF<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
           </div>
         </div>
 
         <div class="use-step">
           <div class="use-num">3</div>
           <div class="use-body">
-            <div class="use-title">Watch the magic happen</div>
-            <div class="code-wrap"><pre><span class="cm"># Enter the folder — vars load automatically</span>
-cd ~/studies/k8s
-<span class="st">direnv: loading ~/studies/k8s/.envrc</span>
-<span class="st">direnv: export +KUBECONFIG +AWS_PROFILE +ENVIRONMENT</span>
-
-<span class="cm"># Leave the folder — vars unload automatically</span>
-cd ~
-<span class="st">direnv: unloading</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="use-title">Allow direnv to load it (one-time per file)</div>
+            <div class="use-desc">For security, direnv blocks new .envrc files until you explicitly approve them.</div>
+            <div class="code-wrap"><pre>direnv allow<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
           </div>
         </div>
 
         <div class="use-step">
           <div class="use-num">4</div>
+          <div class="use-body">
+            <div class="use-title">Watch the isolation in action</div>
+            <div class="code-wrap"><pre><span class="cm"># Enter the study folder — vars load automatically</span>
+cd ~/studies/kubernetes
+<span class="st">direnv: loading ~/studies/kubernetes/.envrc</span>
+<span class="st">direnv: export +ENVIRONMENT +KUBECONFIG</span>
+
+echo $KUBECONFIG     <span class="cm"># → /Users/you/.kube/config-lab</span>
+echo $ENVIRONMENT    <span class="cm"># → study</span>
+
+<span class="cm"># Go back to work — vars unload automatically</span>
+cd ~/work
+<span class="st">direnv: unloading</span>
+
+echo $KUBECONFIG     <span class="cm"># → (empty — your work cluster is safe)</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="note note-success" style="margin-top:6px">Your work cluster config is never touched. You can't accidentally run kubectl against the wrong cluster.</div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">5</div>
           <div class="use-body">
             <div class="use-title">Edit the .envrc later</div>
             <div class="code-wrap"><pre>direnv edit .<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
