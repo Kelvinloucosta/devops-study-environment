@@ -267,6 +267,7 @@
   <a href="#mise">mise</a>
   <a href="#direnv">direnv</a>
   <a href="#act">act</a>
+  <a href="#github">GitHub</a>
 </nav>
 
 <div class="page">
@@ -1070,6 +1071,189 @@ docker images | grep act
 
 <span class="cm"># Remove them</span>
 docker images | grep act | awk '{print $3}' | xargs docker rmi<button class="copy-btn" onclick="cp(this)">copy</button></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       7. GITHUB — multiple accounts
+  ══════════════════════════════════════ -->
+  <section class="tool-section" id="github">
+    <div class="tool-header">
+      <div class="tool-emoji">🐙</div>
+      <div>
+        <span class="tool-title">GitHub accounts</span>
+        <span class="tool-badge badge-free">isolation</span>
+      </div>
+    </div>
+    <p class="tool-what">
+      If you have separate GitHub accounts for work and personal/study use, you need to tell Git and SSH
+      which identity to use in each folder. Without this, all your commits go out with the wrong email
+      and pushes may authenticate with the wrong account.
+    </p>
+
+    <div class="tabs" id="tabs-github">
+      <div class="tab-nav">
+        <button class="tab-btn active-install" onclick="switchTab('github','install',this)"><span class="tab-dot dot-install"></span>Git identity</button>
+        <button class="tab-btn" onclick="switchTab('github','use',this)"><span class="tab-dot dot-use"></span>SSH keys</button>
+        <button class="tab-btn" onclick="switchTab('github','remove',this)"><span class="tab-dot dot-remove"></span>Clone & use</button>
+      </div>
+
+      <!-- GIT IDENTITY -->
+      <div class="tab-panel active" id="github-install">
+        <div class="explain">
+          <strong>How it works:</strong> Git has a global config (<code>~/.gitconfig</code>) that applies everywhere.
+          You can override it per folder using <code>includeIf</code> — so commits inside <code>~/studies/</code>
+          automatically use your personal email, and commits inside your work folder use your work email.
+          No manual switching needed.
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">1</div>
+          <div class="use-body">
+            <div class="use-title">Create a separate git config for studies</div>
+            <div class="code-wrap"><pre>cat > ~/.gitconfig-study &lt;&lt; 'EOF'
+[user]
+  name = Your Name
+  email = your-personal@gmail.com
+EOF<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">2</div>
+          <div class="use-body">
+            <div class="use-title">Tell global git to use it inside ~/studies/</div>
+            <div class="use-desc">Open your global git config and add the includeIf block at the bottom.</div>
+            <div class="code-wrap"><pre>nano ~/.gitconfig<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="code-wrap" style="margin-top:8px"><pre><span class="cm"># Add this at the bottom of ~/.gitconfig:</span>
+[includeIf "gitdir:~/studies/"]
+  path = ~/.gitconfig-study<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">3</div>
+          <div class="use-body">
+            <div class="use-title">Verify the isolation</div>
+            <div class="code-wrap"><pre><span class="cm"># Inside studies — shows personal email</span>
+cd ~/studies/kubernetes
+git init
+git config user.email   <span class="cm"># → your-personal@gmail.com</span>
+
+<span class="cm"># Inside work — shows work email</span>
+cd ~/work
+git config user.email   <span class="cm"># → you@company.com</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="note note-success" style="margin-top:6px">Automatic. No switching needed — git picks the right identity based on which folder you're in.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SSH KEYS -->
+      <div class="tab-panel" id="github-use">
+        <div class="explain">
+          <strong>The problem:</strong> without extra config, the SSH agent offers all your keys to GitHub at once — GitHub accepts the first one it recognizes, which may be the wrong account.
+          Adding <code>IdentitiesOnly yes</code> forces SSH to use only the key you specified for that host, nothing else.
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">1</div>
+          <div class="use-body">
+            <div class="use-title">Generate a key for your study account (if you don't have one)</div>
+            <div class="code-wrap"><pre>ssh-keygen -t ed25519 -C "your-personal@gmail.com" -f ~/.ssh/github_studies<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">2</div>
+          <div class="use-body">
+            <div class="use-title">Add it to your personal GitHub account</div>
+            <div class="use-desc">Copy the public key to clipboard, then go to GitHub → Settings → SSH and GPG keys → New SSH key.</div>
+            <div class="code-wrap"><pre>cat ~/.ssh/github_studies.pub | pbcopy<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">3</div>
+          <div class="use-body">
+            <div class="use-title">Configure ~/.ssh/config with IdentitiesOnly yes</div>
+            <div class="use-desc">This is the critical part — without <code>IdentitiesOnly yes</code>, SSH ignores your IdentityFile and uses whatever the agent has loaded first.</div>
+            <div class="code-wrap"><pre><span class="cm"># Work GitHub (default host)</span>
+Host github.com
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_work
+  IdentitiesOnly yes
+
+<span class="cm"># Personal/study GitHub (custom host alias)</span>
+Host github-studies
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/github_studies
+  IdentitiesOnly yes<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">4</div>
+          <div class="use-body">
+            <div class="use-title">Test both connections</div>
+            <div class="code-wrap"><pre>ssh -T git@github.com          <span class="cm"># → Hi work-username!</span>
+ssh -T git@github-studies      <span class="cm"># → Hi personal-username!</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="note note-success" style="margin-top:6px">Each host authenticates with its own key and shows a different GitHub username. Isolation confirmed.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLONE & USE -->
+      <div class="tab-panel" id="github-remove">
+        <div class="explain">
+          <strong>The key rule:</strong> when cloning study repos, use <code>github-studies</code> as the host instead of <code>github.com</code>.
+          This tells SSH which key to use, and since the folder is inside <code>~/studies/</code>, git automatically uses your personal email for commits too.
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">1</div>
+          <div class="use-body">
+            <div class="use-title">Go to your study folder first</div>
+            <div class="code-wrap"><pre>cd ~/studies/docker   <span class="cm"># or std-docker if you set the alias</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">2</div>
+          <div class="use-body">
+            <div class="use-title">Clone using the study host alias</div>
+            <div class="use-desc">Replace <code>github.com</code> with <code>github-studies</code> in the SSH URL.</div>
+            <div class="code-wrap"><pre><span class="cm"># Instead of:</span>
+git clone git@github.com:YourUsername/my-repo.git
+
+<span class="cm"># Use:</span>
+git clone git@github-studies:YourUsername/my-repo.git<button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">3</div>
+          <div class="use-body">
+            <div class="use-title">Everything is automatic from here</div>
+            <div class="use-desc">Git commits use your personal email. SSH pushes use your personal key. No extra configuration per repo.</div>
+            <div class="code-wrap"><pre>cd my-repo
+git config user.email   <span class="cm"># → your-personal@gmail.com ✓</span>
+git push                <span class="cm"># → authenticates with github_studies key ✓</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+          </div>
+        </div>
+
+        <div class="use-step">
+          <div class="use-num">4</div>
+          <div class="use-body">
+            <div class="use-title">Work repos stay unchanged</div>
+            <div class="code-wrap"><pre>cd ~/work/my-work-repo
+git config user.email   <span class="cm"># → you@company.com ✓</span>
+git push                <span class="cm"># → authenticates with work key ✓</span><button class="copy-btn" onclick="cp(this)">copy</button></pre></div>
+            <div class="note note-success" style="margin-top:6px">Two GitHub accounts, fully isolated, zero manual switching.</div>
+          </div>
         </div>
       </div>
     </div>
